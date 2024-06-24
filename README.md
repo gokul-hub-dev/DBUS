@@ -4,7 +4,7 @@
 ./run.sh
 
 this script will generate server and client bin file, execute those bin file/
-./server
+./server 
 ./client 3
 
 if client argument value lessthen 1 server won't response.
