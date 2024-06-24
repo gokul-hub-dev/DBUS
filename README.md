@@ -11,6 +11,45 @@ if client argument value lessthen 1 server won't response.
 
 ##################################server######################################
 
+
++---------------------+             +---------------------------+
+|   Start Program     |             |   Register D-Bus Name      |
+|                     |             |   "com.DBUS_gen"           |
++----------+----------+             +--------------+------------+
+           |                                         |
+           v                                         |
++---------------------+             +----------------+-----------+
+|  Initialize GLib    |             |  on_name_acquired Callback |
+|  Main Loop          |             |  (D-Bus Name Acquisition)  |
++----------+----------+             +--------------+-------------+
+           |                                         |
+           v                                         |
++---------------------+             +----------------+----------+
+|  Print "Server      |             |  Create D-Bus Interface   |
+|  running..."        |             |  Skeleton                 |
++----------+----------+             +--------------+------------+
+           |                                         |
+           v                                         |
++---------------------+             +----------------+------------+
+|  g_bus_own_name     |             |  Export Interface on D-Bus  |
+|  (Register D-Bus    |             |  (Interface at "/")         |
+|  Name Callback)     |             +----------------+------------+
++---------------------+                              |
+           |                                         |
+           v                                         |
++---------------------+             +----------------+------------+
+|  g_main_loop_run    |<------------+  Handle Client Method       |
+|  (Start GLib Main   |             |  Calls (on_handle_network)  |
+|  Loop)              |             +----------------+------------+
++---------------------+                              |
+           |                                         |
+           v                                         |
++---------------------+             +----------------+------------+
+|                     |             |  Respond to Client        |
+|                     +------------>+  Message Sent!            |
+|  End Program        |             +---------------------------+
++---------------------+
+
 1.Initialization:
 Start the program.
 Initialize GLib main loop (g_main_loop_new).
@@ -43,6 +82,80 @@ The program terminates when explicitly stopped or upon encountering an exit cond
 
 
 ####################################client###########################################
+
+  +-----------------+
+  |   Start Program |
+  +--------+--------+
+           |
+           v
+  +-----------------+
+  |  Check Command  |
+  |  Line Arguments |
+  +--------+--------+
+           |
+           v
+  +-----------------+
+  |  Create D-Bus   |
+  |  Proxy          |
+  +--------+--------+
+           |
+           v
+  +--------------------------+
+  |  Register Async          |
+  |  Callback                |
+  |  (callback_client_async) |
+  +--------+-----------------+
+           |
+           v
+  +-----------------+
+  |  Parse Command  |
+  |  Line Argument  |
+  +--------+--------+
+           |
+           v
+  +-----------------------------------------------------+
+  |  Make D-Bus Call                                    |
+  |  (namespace_dbus_server_client_network_call_client) |
+  +--------+--------------------------------------------+
+           |
+           v
+  +-----------------+
+  |  Initialize     |
+  |  GLib Main Loop |
+  +--------+--------+
+           |
+           v
+  +-----------------+
+  |  Run GLib Main  |
+  |  Loop           |
+  +--------+--------+
+           |
+   +-------+--------+
+   |       |
+   v       |
++--+-----------------------+
+|  Handle D-Bus            |
+|  Responses and           |
+|  Events                  |
+|  (callback_client_async) |
++--------------------------+
+           |
+           v
+  +-----------------+
+  |  Print Result   |
+  +-----------------+
+           |
+           v
+  +-----------------+
+  |  Cleanup and    |
+  |  Release        |
+  +-----------------+
+           |
+           v
+  +-----------------+
+  |   Exit Program  |
+  +-----------------+
+
 
 1.Argument Check:
 Checks if the program is provided with the correct number of arguments (num1).
