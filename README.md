@@ -10,6 +10,7 @@ this script will generate server and client bin file, execute those bin file/
 if client argument value lessthen 1 server won't response.
 
 ##################################server######################################
+
 1.Initialization:
 Start the program.
 Initialize GLib main loop (g_main_loop_new).
@@ -42,6 +43,7 @@ The program terminates when explicitly stopped or upon encountering an exit cond
 
 
 ####################################client###########################################
+
 1.Argument Check:
 Checks if the program is provided with the correct number of arguments (num1).
 Prints usage instructions if arguments are insufficient.
