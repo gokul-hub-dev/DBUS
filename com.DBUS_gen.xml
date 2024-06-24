@@ -1,0 +1,12 @@
+<node>
+    <interface name="com.DBUS_gen.server_client_network">
+        <method name="server">
+            <arg name="num1" direction="in" type="i" />
+            <arg name="ans" direction="out" type="i" />
+        </method>
+        <method name="client">
+            <arg name="num1" direction="in" type="i" />
+            <arg name="ans" direction="out" type="i" />
+        </method>
+    </interface>
+</node>
