@@ -46,6 +46,8 @@ int main()
     GMainLoop *loop;
 
     loop = g_main_loop_new(NULL, FALSE);
+    //D-Bus Name Registration
+    //name : com.DBUS_gen
     g_bus_own_name(G_BUS_TYPE_SESSION, "com.DBUS_gen", G_BUS_NAME_OWNER_FLAGS_NONE, NULL, on_name_acquired, NULL, NULL, NULL);
     g_print("Server running...\n");
     g_main_loop_run(loop);
