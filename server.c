@@ -30,7 +30,7 @@ on_name_acquired(GDBusConnection *connection,
 
     interface = namespace_dbus_server_client_network_skeleton_new();
     g_signal_connect(interface, "handle-client", G_CALLBACK(on_handle_network), NULL);
-
+    //The path "/" is the object path on the D-Bus where the server exports the interface.
     if (!g_dbus_interface_skeleton_export(G_DBUS_INTERFACE_SKELETON(interface), connection, "/", &error))
     {
         g_printerr("Failed to export interface: %s\n", error->message);
