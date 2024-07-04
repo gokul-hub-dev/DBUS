@@ -186,3 +186,24 @@ Unreferences the main loop object (g_main_loop_unref(loop)).
 
 6.Program Exit:
 Returns 0 to indicate successful program execution.
+
+
+--------------------------------------------------summary of dbus header-------------------------------------
+1.Include Guard and Include Statements:
+Prevents multiple inclusions of the file.
+Includes the GIO library.
+
+2.Namespace Macros and Type Definitions:
+Macros for type casting, type checking, and getting the interface for namespaceDBUSServer_client_network.
+
+3.Interface Structs:
+Defines namespaceDBUSServer_client_network and its interface with function pointers for handling method calls (handle_client and handle_server).
+
+4.Function Declarations:
+Functions to provide GType system information.
+Completion functions for D-Bus method calls (server and client).
+Functions to initiate and complete asynchronous and synchronous D-Bus method calls.
+
+5.Proxy and Skeleton Declarations:
+Defines the proxy object that acts as a client-side representation of the interface, with functions to create new proxies and make calls.
+Defines the skeleton object, which is the server-side implementation of the interface.
