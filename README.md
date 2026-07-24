@@ -1,209 +1,216 @@
-# DBUS
+# DBUS Session Bus Example
 
-#run
+This repository contains a small GLib/GIO D-Bus demo that shows how to:
+
+- register a service name on the D-Bus session bus,
+- export a D-Bus interface from a server process,
+- call that interface from a client process,
+- receive and print the returned result using an asynchronous callback.
+
+The program is intentionally simple and is meant as a learning example for D-Bus service/client communication in C using GLib.
+
+## Project Overview
+
+The example uses a generated D-Bus binding from the XML description in `com.DBUS_gen.xml`.
+
+- Service name: `com.DBUS_gen`
+- Interface name: `com.DBUS_gen.server_client_network`
+- Object path: `/`
+- Method used by the client: `client`
+
+The client sends an integer value `num1` to the server. The server computes:
+
+```text
+ans = num1 + 1
+```
+
+and returns `ans` to the client only when `num1 > 1`.
+
+If the client passes a value less than or equal to `1`, the server does not send a response.
+
+## Repository Structure
+
+- `server.c` — server-side implementation that owns the D-Bus name and exports the interface.
+- `client.c` — client-side implementation that creates a proxy, calls the remote method, and waits for the async callback.
+- `com.DBUS_gen.xml` — D-Bus interface definition used by `gdbus-codegen`.
+- `mydbus.c` and `mydbus.h` — generated GLib binding files produced from the XML file.
+- `Makefile` — builds the server and client binaries.
+- `run.sh` — convenience script that regenerates bindings and builds the binaries.
+
+## Build Requirements
+
+Make sure the following are installed on the system:
+
+- `gcc`
+- `glib-2.0`
+- `gio-2.0`
+- `gdbus-codegen`
+- `pkg-config`
+
+## Build Instructions
+
+You can build the project in either of these ways:
+
+### Option 1: Use the provided script
+
+```sh
+chmod +x run.sh
 ./run.sh
+```
 
-this script will generate server and client bin file, execute those bin file/
-./server 
+The script will:
+
+1. remove previous build artifacts,
+2. regenerate `mydbus.c` and `mydbus.h`,
+3. compile `server` and `client`.
+
+### Option 2: Use Make directly
+
+```sh
+make clean
+make gen
+make all
+```
+
+## How to Run
+
+Start the server first:
+
+```sh
+./server
+```
+
+Then, in another terminal, run the client with an integer argument:
+
+```sh
 ./client 3
+```
 
-if client argument value lessthen 1 server won't response.
+Example behavior:
 
-##################################server######################################
+- Input: `3`
+- Server receives `3`
+- Server computes `4`
+- Client prints:
 
+```text
+Answer = 4
+```
 
-+---------------------+             +---------------------------+
-|   Start Program     |             |   Register D-Bus Name      |
-|                     |             |   "com.DBUS_gen"           |
-+----------+----------+             +--------------+------------+
-           |                                         |
-           v                                         |
-+---------------------+             +----------------+-----------+
-|  Initialize GLib    |             |  on_name_acquired Callback |
-|  Main Loop          |             |  (D-Bus Name Acquisition)  |
-+----------+----------+             +--------------+-------------+
-           |                                         |
-           v                                         |
-+---------------------+             +----------------+----------+
-|  Print "Server      |             |  Create D-Bus Interface   |
-|  running..."        |             |  Skeleton                 |
-+----------+----------+             +--------------+------------+
-           |                                         |
-           v                                         |
-+---------------------+             +----------------+------------+
-|  g_bus_own_name     |             |  Export Interface on D-Bus  |
-|  (Register D-Bus    |             |  (Interface at "/")         |
-|  Name Callback)     |             +----------------+------------+
-+---------------------+                              |
-           |                                         |
-           v                                         |
-+---------------------+             +----------------+------------+
-|  g_main_loop_run    |<------------+  Handle Client Method       |
-|  (Start GLib Main   |             |  Calls (on_handle_network)  |
-|  Loop)              |             +----------------+------------+
-+---------------------+                              |
-           |                                         |
-           v                                         |
-+---------------------+             +----------------+------------+
-|                     |             |  Respond to Client        |
-|                     +------------>+  Message Sent!            |
-|  End Program        |             +---------------------------+
-+---------------------+
+## Complete Flow Diagram
 
-1.Initialization:
-Start the program.
-Initialize GLib main loop (g_main_loop_new).
+The following plain-text flow explains the full lifecycle of this D-Bus example more clearly:
 
-2.D-Bus Name Registration:
-Register the D-Bus name "com.DBUS_gen" on the session bus using g_bus_own_name.
-Provide a callback (on_name_acquired) for handling the acquisition of the name.
-on_name_acquired Callback:
+```text
+Build Phase
+-----------
+com.DBUS_gen.xml
+    -> gdbus-codegen
+    -> mydbus.c + mydbus.h
+    -> make builds server and client
 
-3.Upon successful acquisition of the D-Bus name:
-Create a new instance of namespaceDBUSServer.client_network interface skeleton.
-Connect the handle-client signal of the interface to the on_handle_network callback function.
-Export the interface on D-Bus at path "/" using g_dbus_interface_skeleton_export.
+Server Startup
+--------------
+./server
+    -> server.c main()
+    -> create GLib main loop
+    -> register D-Bus name: com.DBUS_gen on session bus
+    -> on_name_acquired()
+    -> create skeleton interface
+    -> connect handle-client signal
+    -> export interface on object path /
+    -> wait for incoming D-Bus method calls
 
-4.Main Event Loop:
-Print "Server running..." to indicate the server is operational.
-Enter the GLib main loop (g_main_loop_run) to handle D-Bus events and signals.
+Client Startup
+--------------
+./client 3
+    -> client.c main()
+    -> create proxy for com.DBUS_gen
+    -> call remote method client(num1 = 3)
+    -> wait for async callback
 
-5.Handling Client Requests:
-When a client sends a method call on the namespaceDBUSServer.client_network interface:
-The on_handle_network callback function is invoked.
-It processes the method call (num1), computes ans = num1 + 1, and sends ans back to the client if num1 > 1.
-Prints relevant messages indicating the received number and the completion of message sending.
+Request Processing
+-----------------
+Server receives num1
+    -> if num1 > 1
+        -> ans = num1 + 1
+        -> send ans back to client
+    -> if num1 <= 1
+        -> no response is sent
 
-6.Continued Operation:
-The server remains active, continuously handling D-Bus events and client requests within the main loop.
+Result
+------
+client callback receives ans
+    -> print Answer = 4
+```
 
-7.End of Program:
-The program terminates when explicitly stopped or upon encountering an exit condition.
+## Server Behavior
 
+The server performs the following steps:
 
-####################################client###########################################
+1. Creates a GLib main loop.
+2. Registers the D-Bus name `com.DBUS_gen` on the session bus.
+3. When the name is acquired, creates a skeleton object for the interface.
+4. Connects the `handle-client` signal to the callback `on_handle_network`.
+5. Exports the interface on the object path `/`.
+6. Waits in the main loop for incoming D-Bus requests.
 
-  +-----------------+
-  |   Start Program |
-  +--------+--------+
-           |
-           v
-  +-----------------+
-  |  Check Command  |
-  |  Line Arguments |
-  +--------+--------+
-           |
-           v
-  +-----------------+
-  |  Create D-Bus   |
-  |  Proxy          |
-  +--------+--------+
-           |
-           v
-  +--------------------------+
-  |  Register Async          |
-  |  Callback                |
-  |  (callback_client_async) |
-  +--------+-----------------+
-           |
-           v
-  +-----------------+
-  |  Parse Command  |
-  |  Line Argument  |
-  +--------+--------+
-           |
-           v
-  +-----------------------------------------------------+
-  |  Make D-Bus Call                                    |
-  |  (namespace_dbus_server_client_network_call_client) |
-  +--------+--------------------------------------------+
-           |
-           v
-  +-----------------+
-  |  Initialize     |
-  |  GLib Main Loop |
-  +--------+--------+
-           |
-           v
-  +-----------------+
-  |  Run GLib Main  |
-  |  Loop           |
-  +--------+--------+
-           |
-   +-------+--------+
-   |       |
-   v       |
-+--+-----------------------+
-|  Handle D-Bus            |
-|  Responses and           |
-|  Events                  |
-|  (callback_client_async) |
-+--------------------------+
-           |
-           v
-  +-----------------+
-  |  Print Result   |
-  +-----------------+
-           |
-           v
-  +-----------------+
-  |  Cleanup and    |
-  |  Release        |
-  +-----------------+
-           |
-           v
-  +-----------------+
-  |   Exit Program  |
-  +-----------------+
+Inside `on_handle_network()`:
 
+- it receives `num1`,
+- computes `ans = num1 + 1`,
+- sends `ans` back only if `num1 > 1`.
 
-1.Argument Check:
-Checks if the program is provided with the correct number of arguments (num1).
-Prints usage instructions if arguments are insufficient.
+## Client Behavior
 
-2.Proxy Initialization:
-Creates a proxy object (proxy) for the namespaceDBUSServer.client_network interface.
-Synchronously connects to the D-Bus session bus and obtains the proxy object.
-Handles errors if the proxy creation fails.
+The client:
 
-3.Callback Function (callback_client_async):
-Defined to handle the asynchronous completion of the D-Bus method call.
-Prints a message indicating the callback has been invoked (callback_client_async called!).
-Retrieves the return value (retval) from the method call using namespace_dbus_server_client_network_call_client_finish.
-If successful, prints the returned value (Answer = <retval>) and exits the program.
-If there's an error during the callback, prints an error message and frees the error object (error).
+1. checks that a command-line argument is provided,
+2. creates a D-Bus proxy for the service,
+3. calls the remote method `client`,
+4. waits in a GLib main loop until the async callback completes,
+5. prints the returned answer and exits.
 
-4.Main Function:
-Parses the command-line argument (num1) as an integer (a).
-Initiates the asynchronous D-Bus method call (namespace_dbus_server_client_network_call_client), passing a as an argument.
-Registers callback_client_async as the callback function to handle the asynchronous response.
-Creates a GLib main loop (loop) to handle events until the callback completes.
-Runs the main loop (g_main_loop_run) to keep the program alive and responsive to D-Bus events.
+## D-Bus Interface Definition
 
-5.Cleanup:
-Once the callback completes, releases resources associated with the proxy (g_object_unref(proxy)).
-Unreferences the main loop object (g_main_loop_unref(loop)).
+The interface is declared in `com.DBUS_gen.xml`:
 
-6.Program Exit:
-Returns 0 to indicate successful program execution.
+```xml
+<interface name="com.DBUS_gen.server_client_network">
+  <method name="server">
+    <arg name="num1" direction="in" type="i" />
+    <arg name="ans" direction="out" type="i" />
+  </method>
+  <method name="client">
+    <arg name="num1" direction="in" type="i" />
+    <arg name="ans" direction="out" type="i" />
+  </method>
+</interface>
+```
 
+In practice, the implemented code path uses the `client` method and returns `num1 + 1` as the answer.
 
---------------------------------------------------summary of dbus header-------------------------------------
-1.Include Guard and Include Statements:
-Prevents multiple inclusions of the file.
-Includes the GIO library.
+## Notes
 
-2.Namespace Macros and Type Definitions:
-Macros for type casting, type checking, and getting the interface for namespaceDBUSServer_client_network.
+- This project demonstrates a basic D-Bus service/client exchange.
+- It uses the session bus, not the system bus.
+- `mydbus.c` and `mydbus.h` are generated files and should not be hand-edited.
+- If the argument value is `1` or less, the current server logic does not emit a response.
 
-3.Interface Structs:
-Defines namespaceDBUSServer_client_network and its interface with function pointers for handling method calls (handle_client and handle_server).
+## Clean Build
 
-4.Function Declarations:
-Functions to provide GType system information.
-Completion functions for D-Bus method calls (server and client).
-Functions to initiate and complete asynchronous and synchronous D-Bus method calls.
+To remove all generated binaries and object files:
 
-5.Proxy and Skeleton Declarations:
-Defines the proxy object that acts as a client-side representation of the interface, with functions to create new proxies and make calls.
-Defines the skeleton object, which is the server-side implementation of the interface.
+```sh
+make clean
+```
+
+## Summary
+
+This repository is a compact example of a GLib D-Bus application where:
+
+- the server registers a well-known name,
+- the client connects to that service through a proxy,
+- the server handles a method call asynchronously,
+- the result is returned over the session bus.
+
